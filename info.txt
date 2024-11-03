@@ -1,0 +1,12 @@
+$env:POSTGRES_DB="mydatabase"
+$env:POSTGRES_USER="myuser"
+$env:POSTGRES_PASSWORD="mypassword"
+$env:DB_HOST="localhost:5432"
+
+export POSTGRES_DB=mydatabase
+export POSTGRES_USER=myuser
+export POSTGRES_PASSWORD=mypassword
+
+Get-ChildItem Env:
+
+psql -U myuser -d mydatabase
