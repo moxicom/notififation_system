@@ -1,3 +1,4 @@
+import tortoise.exceptions
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import timedelta
@@ -28,7 +29,10 @@ class Token(BaseModel):
 
 @router.post("/register")
 async def register(user: UserCreate):
-    created_user = await auth_service.register_user(user.username, user.email, user.password)
+    try:
+        created_user = await auth_service.register_user(user.username, user.email, user.password)
+    except tortoise.exceptions.IntegrityError:
+        raise HTTPException(status_code=400, detail="User already exists")
     return {"id": created_user.id, "username": created_user.username}
 
 

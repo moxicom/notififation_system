@@ -7,10 +7,10 @@ from models.user import User
 
 logger = logging.getLogger(__name__)
 
-USER = os.getenv('POSTGRES_USER')
-PASSWORD = os.getenv('POSTGRES_PASSWORD')
-DB = os.getenv('POSTGRES_DB')
-DB_HOST = os.getenv('DB_HOST')
+USER = os.getenv('POSTGRES_USER', default='myuser')
+PASSWORD = os.getenv('POSTGRES_PASSWORD', default='mypassword')
+DB = os.getenv('POSTGRES_DB', default='mydatabase')
+DB_HOST = os.getenv('DB_HOST', default='localhost:5432')
 
 env_vars = os.environ
 
