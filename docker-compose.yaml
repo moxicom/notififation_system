@@ -12,6 +12,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+  
+  auth_service:
+    build:
+      context: ./auth_service  # путь к Dockerfile для сервиса
+    container_name: auth_service
+    environment:
+      - JWT_SECRET=test_secret
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DB_HOST=postgres:5432
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:

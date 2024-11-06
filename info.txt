@@ -1,7 +1,13 @@
 $env:POSTGRES_DB="mydatabase"
 $env:POSTGRES_USER="myuser"
 $env:POSTGRES_PASSWORD="mypassword"
+
+$env:DB_JWT_SECRET="my_secret"
+
 $env:DB_HOST="localhost:5432"
+
+$env:ACCESS_TOKEN_EXPIRE_MINUTES="30"
+
 
 export POSTGRES_DB=mydatabase
 export POSTGRES_USER=myuser
@@ -10,3 +16,5 @@ export POSTGRES_PASSWORD=mypassword
 Get-ChildItem Env:
 
 psql -U myuser -d mydatabase
+
+у меня общий репозиторий микросервисов. Внутри каждого должен лежать докер файл. А в корне репозитория докер компоус с postgres. Опиши все докерфайлы (как для питона сделать) и докер компоуз. Все сервисы считывают инфу из переменных окружения
