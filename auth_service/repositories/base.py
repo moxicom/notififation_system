@@ -1,11 +1,8 @@
-from tortoise import Tortoise, run_async
-
+from tortoise import Tortoise
 import os
 import logging
 
-from models.user import User
-
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 USER = os.getenv('POSTGRES_USER', default='myuser')
 PASSWORD = os.getenv('POSTGRES_PASSWORD', default='mypassword')
@@ -14,9 +11,6 @@ DB_HOST = os.getenv('DB_HOST', default='localhost:5432')
 
 env_vars = os.environ
 
-logger.info(f'database creds {USER} {PASSWORD} {DB}')
-
-
 async def init():
     try:
         await Tortoise.init(
@@ -24,11 +18,14 @@ async def init():
             modules={'models': ['models']} # models: package (or models.user)
         )
     except Exception as e:
-        raise Exception(f"failed to init db. {e}")
+        log.error(f"failed to init db. {e}")
+        raise SystemExit(1)
+    log.info("connected to database")
     try:
         await Tortoise.generate_schemas()
     except Exception as e:
-        raise Exception(f"failed to generate schemas. {e}")
+        log.error(f"failed to generate schemas {e}")
+        raise SystemExit(1)
 
 
 # async def run():
