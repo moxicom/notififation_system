@@ -1,0 +1,1 @@
+from adapters.httpserver.server import create_rest_handler
