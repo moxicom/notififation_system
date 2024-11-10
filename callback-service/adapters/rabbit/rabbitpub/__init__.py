@@ -1,0 +1,1 @@
+from adapters.rabbit.rabbitpub.rabbitsub import AsyncRabbitMQConsumer
