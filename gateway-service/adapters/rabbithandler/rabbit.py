@@ -4,11 +4,12 @@ import logging
 import pika
 
 from models import NotificationInfo
+from core.config import config
 
 log = logging.getLogger(__name__)
 
 class RabbitMQProducer:
-    def __init__(self, host: str = "localhost", input_queue: str = "input_queue_notif", cb_queue: str= "callback_input",
+    def __init__(self, host: str, input_queue: str = "input_queue_notif", cb_queue: str= "callback_input",
                  username: str= "rmuser", password: str="rmpassword"):
         self.host = host
         self.callback_queue = cb_queue
@@ -25,6 +26,7 @@ class RabbitMQProducer:
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, credentials=credentials))
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue=self.callback_queue, durable=True)
+        self.channel.queue_declare(queue=self.input_queue, durable=True)
 
     def send_message(self, message: dict):
         """Send msg to RabbitMQ."""
@@ -79,17 +81,23 @@ class RabbitMQProducer:
         self.channel.start_consuming()
 
 
-rabbit_producer = RabbitMQProducer()
-
-
 def init_rabbit_producer(host: str, input_queue: str, cb_queue: str , username: str ,password: str):
     global rabbit_producer
-    rabbit_producer = RabbitMQProducer(
+    return RabbitMQProducer(
         host=host,
         input_queue=input_queue,
         cb_queue=cb_queue,
         username=username,
         password=password,
     )
-    rabbit_producer.connect()
-    log.info("initialized rabbit")
+    # log.info("initialized rabbit")
+
+rabbit_producer = init_rabbit_producer(
+    host=config.RABBIT_HOST,
+    input_queue=config.GATEWAY_INPUT_QUEUE,
+    cb_queue=config.CALLBACK_SERV_QUEUE,
+    password=config.RABBIT_PASSWORD,
+    username=config.RABBIT_USER,
+)
+
+rabbit_producer.connect()

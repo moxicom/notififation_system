@@ -17,13 +17,9 @@ def run_http_server(port: int):
 
 # Функция для запуска слушателя RabbitMQ в отдельном потоке
 def run_rabbit_listener():
-    init_rabbit_producer(
-        host=config.RABBIT_HOST,
-        input_queue=config.GATEWAY_INPUT_QUEUE,
-        cb_queue=config.CALLBACK_SERV_QUEUE,
-        password=config.RABBIT_PASSWORD,
-        username=config.RABBIT_USER,
-    )
+    # init_rabbit_producer(
+    #
+    # )
     rabbit_producer.start_listening()
 
 
@@ -34,14 +30,19 @@ async def main():
         loop = asyncio.get_event_loop()
 
         # Передаем порт в run_http_server через partial
-        run_http_server_partial = partial(run_http_server, config.SERVER_PORT)
-        run_rabbit_partial = partial(run_rabbit_listener)
+        run_http_server_partial = partial(run_http_server, 8000)
 
-        # Запуск HTTP сервера и RabbitMQ listener параллельно
-        await asyncio.gather(
-            loop.run_in_executor(executor, run_rabbit_partial),
-            loop.run_in_executor(executor, run_http_server_partial)
-        )
+
+        try:
+            run_rabbit_partial = partial(run_rabbit_listener)
+            # Запуск HTTP сервера и RabbitMQ listener параллельно
+            await asyncio.gather(
+                loop.run_in_executor(executor, run_rabbit_partial),
+                loop.run_in_executor(executor, run_http_server_partial)
+            )
+        except Exception as ex:
+            logging.error(f"failed to init rabbit {ex}")
+            raise exit(1)
 
 
 if __name__ == "__main__":
