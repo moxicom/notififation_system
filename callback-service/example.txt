@@ -1,0 +1,15 @@
+{
+  "message_id": "msg-123",
+  "title": "Welcome",
+  "text": "Hello, welcome to our service!",
+  "from_login": "admin",
+  "logins": ["user1", "user2"],
+  "sender_type": {
+    "SMS": true,
+    "EMAIL": false
+  },
+  "callback_type": {
+    "queue": "callback_result_queue",
+    "http": "http://localhost:8000/callback"
+  }
+}

@@ -25,14 +25,12 @@ def run_fastapi():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 async def run_consumer():
-    consumer = AsyncRabbitMQConsumer("amqp://rmuser:rmpasswrod@localhost/", "my_queue")
+    consumer = AsyncRabbitMQConsumer("amqp://rmuser:rmpassword@localhost/", "my_queue")
     await consumer.consume()
 
 # Запуск консьюмера
 async def main():
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-
-    consumer = AsyncRabbitMQConsumer("amqp://rmuser:rmpasswrod@localhost/", "my_queue")
 
     loop = asyncio.get_event_loop()
 
