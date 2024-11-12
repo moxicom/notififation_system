@@ -11,6 +11,8 @@ class CallbackType(BaseModel):
 
 
 class NotificationInfo(BaseModel):
+    title: str
+    text: str
     from_login: str
     logins: list[str]
     sender_type: SenderType
