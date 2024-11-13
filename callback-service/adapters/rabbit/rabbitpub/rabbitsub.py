@@ -9,15 +9,17 @@ import pydantic_core
 from aio_pika import IncomingMessage
 from aio_pika.abc import AbstractMessage, AbstractIncomingMessage
 
+from adapters.redis.redis import RedisClient
 from models import NotificationInfo
 from models.models import SenderType, NotificationDBStatus
 
 LOGGER = logging.getLogger(__name__)
 
 class AsyncRabbitMQConsumer:
-    def __init__(self, amqp_url: str, queue_name: str):
+    def __init__(self, amqp_url: str, queue_name: str, redis_client: RedisClient):
         self.amqp_url = amqp_url
         self.listen_queue = queue_name
+        self.redis_client: RedisClient = redis_client
 
     async def on_message(self, message: AbstractIncomingMessage):
         """
@@ -30,9 +32,35 @@ class AsyncRabbitMQConsumer:
     async def process_message(self, message: AbstractIncomingMessage):
         try:
             data = NotificationInfo.model_validate_json(json_data=message.body.decode())
-        except pydantic_core._pydantic_core.ValidationError as ex:
+        except pydantic_core.ValidationError as ex:
             LOGGER.error(f"failed to parse data {ex}")
             return
+
+        try:
+            for login in data.logins:
+                if data.sender_type.SMS:
+                    await self.redis_client.set_data(data.message_id, NotificationDBStatus(
+                        message_id=data.message_id,
+                        login=login,
+                        sender_type="SMS",
+                        status=False,
+                    ))
+                if data.sender_type.EMAIL:
+                    await self.redis_client.set_data(data.message_id, NotificationDBStatus(
+                        message_id=data.message_id,
+                        login=login,
+                        sender_type="EMAIL",
+                        status=False,
+                    ))
+        except Exception as ex:
+            LOGGER.error(f'failed to set to redis {ex}')
+
+        # TODO push to redis
+
+        # TODO send to senders
+
+        # TODO wait senders callback.
+
         await self.wait_for_callbacks(data)
 
     async def wait_for_callbacks(self, data: NotificationInfo):
