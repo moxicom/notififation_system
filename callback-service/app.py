@@ -28,7 +28,7 @@ def run_fastapi():
     uvicorn.run(app, host='0.0.0.0', port=8000)
 
 async def run_consumer():
-    consumer = AsyncRabbitMQConsumer('amqp://rmuser:rmpassword@localhost/', 'my_queue', redis_client)
+    consumer = AsyncRabbitMQConsumer('amqp://rmuser:rmpasswrod@localhost/', 'my_queue', redis_client)
     await consumer.consume()
 
 async def main():

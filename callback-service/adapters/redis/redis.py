@@ -17,13 +17,13 @@ class RedisClient:
         LOGGER.info("connected to redis")
         return connection
 
-    async def set_data(self, key: str, value: NotificationDBStatus):
-        await self.redis.set(key, value.to_json())
+    def set_data(self, key: str, value: NotificationDBStatus):
+        self.redis.set(key, value.to_json(), ex=10)
 
-    async def get_data(self, key: str) -> [NotificationDBStatus | None]:
-        data = await self.redis.get(key)
+    def get_data(self, key: str) -> NotificationDBStatus | None:
+        data: str = self.redis.get(key)
         if data:
-            return NotificationDBStatus.from_json(data.decode())
+            return NotificationDBStatus.from_json(data)
         return None
 
     async def close(self):

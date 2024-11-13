@@ -26,7 +26,7 @@ class AsyncRabbitMQConsumer:
         message prcessor
         """
         async with message.process():
-            LOGGER.info(f"received message: {message.body.decode()}")
+            LOGGER.info('received message')
             await self.process_message(message)
 
     async def process_message(self, message: AbstractIncomingMessage):
@@ -36,24 +36,32 @@ class AsyncRabbitMQConsumer:
             LOGGER.error(f"failed to parse data {ex}")
             return
 
-        try:
-            for login in data.logins:
-                if data.sender_type.SMS:
-                    await self.redis_client.set_data(data.message_id, NotificationDBStatus(
-                        message_id=data.message_id,
-                        login=login,
-                        sender_type="SMS",
-                        status=False,
-                    ))
-                if data.sender_type.EMAIL:
-                    await self.redis_client.set_data(data.message_id, NotificationDBStatus(
-                        message_id=data.message_id,
-                        login=login,
-                        sender_type="EMAIL",
-                        status=False,
-                    ))
-        except Exception as ex:
-            LOGGER.error(f'failed to set to redis {ex}')
+        # try:
+        for login in data.logins:
+            if data.sender_type.SMS:
+                self.redis_client.set_data(data.message_id, NotificationDBStatus(
+                    message_id=data.message_id,
+                    login=login,
+                    sender_type="SMS",
+                    status=False,
+                ))
+                # TODO TESTing here
+                result = self.redis_client.get_data(data.message_id)
+                if result is None:
+                    print("NONE")
+                else:
+                    print(result)
+
+            if data.sender_type.EMAIL:
+                await self.redis_client.set_data(data.message_id, NotificationDBStatus(
+                    message_id=data.message_id,
+                    login=login,
+                    sender_type="EMAIL",
+                    status=False,
+                ))
+        # except Exception as ex:
+        #     LOGGER.error(f'failed to set to redis {ex}')
+        #     return
 
         # TODO push to redis
 
