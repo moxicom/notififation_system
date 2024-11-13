@@ -25,7 +25,7 @@ def create_rest_handler(port: int) -> HttpHandler:
 
     fast_api.include_router(router, prefix="/api/v1")
 
-    LOGGER.info("created handler")
+    LOGGER.info("created http_server")
 
     http_handler = HttpHandler(port, fast_api)
 

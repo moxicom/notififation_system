@@ -30,7 +30,7 @@ class NotificationDBStatus:
     sender_type: str
     status: bool
 
-    def __init__(self, message_id: str, login: str, sender_type: str, status: bool):
+    def  __init__(self, message_id: str, login: str, sender_type: str, status: bool):
         self.message_id = message_id
         self.login = login
         self.sender_type = sender_type

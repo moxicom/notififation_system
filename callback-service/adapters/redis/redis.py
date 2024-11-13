@@ -1,6 +1,8 @@
 import redis
 import logging
+import json
 from redis import Redis
+from typing import List
 
 from models.models import NotificationDBStatus
 
@@ -17,14 +19,21 @@ class RedisClient:
         LOGGER.info("connected to redis")
         return connection
 
-    def set_data(self, key: str, value: NotificationDBStatus):
-        self.redis.set(key, value.to_json(), ex=10)
+    def set_data(self, key: str, values: List[NotificationDBStatus]):
+        json_data = json.dumps([value.to_json() for value in values])
+        self.redis.set(key, json_data, ex=10)
 
-    def get_data(self, key: str) -> NotificationDBStatus | None:
-        data: str = self.redis.get(key)
-        if data:
-            return NotificationDBStatus.from_json(data)
-        return None
+    def get_data(self, key: str) -> List[NotificationDBStatus]:
+        json_data: str = self.redis.get(key)
+        if json_data:
+            status_dicts = json.loads(json_data)
+            return [NotificationDBStatus.from_json(status) for status in status_dicts]
+        return []
 
     async def close(self):
         await self.redis.close()
+
+redis_client = RedisClient('redis://localhost:6379')
+
+def get_redis_client() -> RedisClient:
+    return redis_client

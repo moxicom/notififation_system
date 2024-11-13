@@ -9,6 +9,7 @@ import pydantic_core
 from aio_pika import IncomingMessage
 from aio_pika.abc import AbstractMessage, AbstractIncomingMessage
 
+from adapters.redis import get_redis_client
 from adapters.redis.redis import RedisClient
 from models import NotificationInfo
 from models.models import SenderType, NotificationDBStatus
@@ -16,10 +17,10 @@ from models.models import SenderType, NotificationDBStatus
 LOGGER = logging.getLogger(__name__)
 
 class AsyncRabbitMQConsumer:
-    def __init__(self, amqp_url: str, queue_name: str, redis_client: RedisClient):
+    def __init__(self, amqp_url: str, queue_name: str):
         self.amqp_url = amqp_url
         self.listen_queue = queue_name
-        self.redis_client: RedisClient = redis_client
+        self.redis_client: RedisClient = get_redis_client()
 
     async def on_message(self, message: AbstractIncomingMessage):
         """
@@ -36,50 +37,47 @@ class AsyncRabbitMQConsumer:
             LOGGER.error(f"failed to parse data {ex}")
             return
 
-        # try:
-        for login in data.logins:
-            if data.sender_type.SMS:
-                self.redis_client.set_data(data.message_id, NotificationDBStatus(
-                    message_id=data.message_id,
-                    login=login,
-                    sender_type="SMS",
-                    status=False,
-                ))
-                # TODO TESTing here
-                result = self.redis_client.get_data(data.message_id)
-                if result is None:
-                    print("NONE")
-                else:
-                    print(result)
+        try:
+            db_datas = []
+            for login in data.logins:
+                if data.sender_type.SMS:
+                    db_data = NotificationDBStatus(
+                        message_id=data.message_id,
+                        login=login,
+                        sender_type="SMS",
+                        status=False,
+                    )
+                    db_datas.append(db_data)
 
-            if data.sender_type.EMAIL:
-                await self.redis_client.set_data(data.message_id, NotificationDBStatus(
-                    message_id=data.message_id,
-                    login=login,
-                    sender_type="EMAIL",
-                    status=False,
-                ))
-        # except Exception as ex:
-        #     LOGGER.error(f'failed to set to redis {ex}')
-        #     return
-
-        # TODO push to redis
+                if data.sender_type.EMAIL:
+                    db_data = NotificationDBStatus(
+                        message_id=data.message_id,
+                        login=login,
+                        sender_type="EMAIL",
+                        status=False,
+                    )
+                    db_datas.append(db_data)
+            self.redis_client.set_data(data.message_id, db_datas)
+        except Exception as ex:
+            LOGGER.error(f'failed to set to redis {ex}')
+            return
 
         # TODO send to senders
-
-        # TODO wait senders callback.
 
         await self.wait_for_callbacks(data)
 
     async def wait_for_callbacks(self, data: NotificationInfo):
         await asyncio.sleep(5) # TIMEOUT
-        a = NotificationDBStatus(data.message_id, "login1",  "SMS", False) # TODO
-        b = NotificationDBStatus(data.message_id, "login2",  "MAIL", True) # TODO
-        result = [a, b]
-        if data.callback_type.http != "":
-            await self.send_callback_http(data.callback_type.http, result)
-        if data.callback_type.queue != "":
-            await self.send_callback_rabbitmq(data.callback_type.queue, result)
+        # a = NotificationDBStatus(data.message_id, "login1",  "SMS", False) # TODO
+        # b = NotificationDBStatus(data.message_id, "login2",  "MAIL", True) # TODO
+        # result = [a, b]
+        result = self.redis_client.get_data(data.message_id)
+        print(result)
+        if result is not None:
+            if data.callback_type.http != "":
+                await self.send_callback_http(data.callback_type.http, result)
+            if data.callback_type.queue != "":
+                await self.send_callback_rabbitmq(data.callback_type.queue, result)
 
     @staticmethod
     async def send_callback_http(url: str, result: list[NotificationDBStatus]):

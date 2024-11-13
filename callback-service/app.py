@@ -8,6 +8,7 @@ from aio_pika import IncomingMessage
 
 from fastapi import FastAPI
 
+from adapters.httpserver import create_rest_handler
 from adapters.rabbit.rabbitpub import AsyncRabbitMQConsumer
 from adapters.redis.redis import RedisClient
 
@@ -17,18 +18,13 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 LOGGER = logging.getLogger(__name__)
 
-app = FastAPI()
-redis_client = RedisClient('redis://localhost:6379')
-
-@app.get("/")
-async def read_root():
-    return {'message': 'Hello, World!'}
+http_server = create_rest_handler(8082)
 
 def run_fastapi():
-    uvicorn.run(app, host='0.0.0.0', port=8000)
+    uvicorn.run(http_server.handler, host='0.0.0.0', port=8000)
 
 async def run_consumer():
-    consumer = AsyncRabbitMQConsumer('amqp://rmuser:rmpasswrod@localhost/', 'my_queue', redis_client)
+    consumer = AsyncRabbitMQConsumer('amqp://rmuser:rmpasswrod@localhost/', 'my_queue')
     await consumer.consume()
 
 async def main():

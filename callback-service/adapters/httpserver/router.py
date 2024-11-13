@@ -1,6 +1,12 @@
-from models import NotificationInfo
-from fastapi import APIRouter, HTTPException
+import redis
+
+from adapters.redis import get_redis_client
+from adapters.redis import RedisClient
+from models import SenderCallback
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+
+from models.models import NotificationDBStatus
 
 router = APIRouter()
 
@@ -9,14 +15,16 @@ router = APIRouter()
 # class ErrorResponse(BaseModel):
 #     detail: str
 
-class SuccessResponse(BaseModel):
-    message: str
-
-
-@router.post("/callback", response_model=SuccessResponse)
-async def notify_handler(notification: NotificationInfo):
+@router.post("/callback")
+async def notify_handler(callback: SenderCallback, redis_client: RedisClient = Depends(get_redis_client)):
     try:
-        message = notification.model_dump(by_alias=True)
-        return SuccessResponse(message="Successfully sent")
+        db_statuses = redis_client.get_data(callback.message_id)
+        for db_idx in range(len(db_statuses)):
+            for cb_idx in range(len(callback.statuses)):
+                if (db_statuses[db_idx].sender_type == callback.sender_type and
+                        db_statuses[db_idx].login == callback.statuses[cb_idx].login):
+                    db_statuses[db_idx].status = callback.statuses[cb_idx].status
+
+        redis_client.set_data(callback.message_id, db_statuses)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process shit: {e}")
