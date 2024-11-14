@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 LOGGER = logging.getLogger(__name__)
 
-http_server = create_rest_handler(8082)
+http_server = create_rest_handler(config.SERVER_PORT)
 
 def run_fastapi():
     http_server.run()

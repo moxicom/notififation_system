@@ -6,11 +6,12 @@ class SenderType(BaseModel):
 
 
 class CallbackType(BaseModel):
-    queue: bool
-    http: bool
+    queue: str
+    http: str
 
 
 class NotificationInfo(BaseModel):
+    message_id: str
     title: str
     text: str
     from_login: str

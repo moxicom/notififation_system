@@ -28,6 +28,16 @@ services:
       networks:
         - my_network
   
+  redis:
+    image: "redis:latest"
+    container_name: "redis_container"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - my_network
+  
   auth_service:
     build:
       context: ./auth_service  # путь к Dockerfile для сервиса
@@ -67,8 +77,36 @@ services:
     networks:
       - my_network
 
+  callback_service:
+    build:
+      context: ./callback-service  # путь к Dockerfile для сервиса
+    container_name: callback_service
+    restart: always
+    environment:
+      # - GATEWAY_PORT=${GATEWAY_PORT}
+      - CALLBACK_PORT=${CALLBACK_PORT}
+      - RABBIT_HOST=${RABBIT_HOST}
+      - RABBIT_USER=${RABBIT_USER}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD}
+      - CALLBACK_SERV_QUEUE=${CALLBACK_SERV_QUEUE}
+      - GATEWAY_INPUT_QUEUE=${GATEWAY_INPUT_QUEUE}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - MAIL_SENDER_URL=${MAIL_SENDER_URL}
+      - SMS_SENDER_URL=${SMS_SENDER_URL}
+      - CALLBACK_SERVICE_TIMEOUT=${CALLBACK_SERVICE_TIMEOUT}
+      - CALLBACK_SERVICE_RABBIT_TTL=${CALLBACK_SERVICE_RABBIT_TTL}
+    ports:
+      - "8082:${CALLBACK_PORT}"
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - my_network
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   my_network:
