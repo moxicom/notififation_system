@@ -1,18 +1,17 @@
 import asyncio
 import json
 import logging
-import time
 
 import aio_pika
 import httpx
 import pydantic_core
-from aio_pika import IncomingMessage
-from aio_pika.abc import AbstractMessage, AbstractIncomingMessage
+from aio_pika.abc import AbstractIncomingMessage
 
 from adapters.redis import get_redis_client
 from adapters.redis.redis import RedisClient
 from models import NotificationInfo
-from models.models import SenderType, NotificationDBStatus
+from models.models import NotificationDBStatus
+from config import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,15 +61,16 @@ class AsyncRabbitMQConsumer:
             LOGGER.error(f'failed to set to redis {ex}')
             return
 
-        # TODO send to senders
+        # send to senders
+        if data.sender_type.SMS:
+            await self.send_to_sender(config.SMS_SENDER_URL, data)
+        if data.sender_type.EMAIL:
+            await self.send_to_sender(config.MAIL_SENDER_URL, data)
 
         await self.wait_for_callbacks(data)
 
     async def wait_for_callbacks(self, data: NotificationInfo):
-        await asyncio.sleep(5) # TIMEOUT
-        # a = NotificationDBStatus(data.message_id, "login1",  "SMS", False) # TODO
-        # b = NotificationDBStatus(data.message_id, "login2",  "MAIL", True) # TODO
-        # result = [a, b]
+        await asyncio.sleep(config.CALLBACK_SERVICE_TIMEOUT)
         result = self.redis_client.get_data(data.message_id)
         print(result)
         if result is not None:
@@ -85,6 +85,12 @@ class AsyncRabbitMQConsumer:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=data)  # Directly send the dict instead of json.dumps
             LOGGER.info(f"Callback sent, status code: {response.status_code}")
+
+    @staticmethod
+    async def send_to_sender(url: str, data: NotificationInfo):
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=data.model_dump_json())
+            LOGGER.info(f"sent to sender, status code: {response.status_code}")
 
     async def send_callback_rabbitmq(self, queue: str, result: list[NotificationDBStatus]):
         connection = await aio_pika.connect_robust(self.amqp_url)

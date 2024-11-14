@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from adapters.httpserver import create_rest_handler
 from adapters.rabbit.rabbitpub import AsyncRabbitMQConsumer
 from adapters.redis.redis import RedisClient
+from config import config
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
@@ -21,10 +22,12 @@ LOGGER = logging.getLogger(__name__)
 http_server = create_rest_handler(8082)
 
 def run_fastapi():
-    uvicorn.run(http_server.handler, host='0.0.0.0', port=8000)
+    http_server.run()
 
 async def run_consumer():
-    consumer = AsyncRabbitMQConsumer('amqp://rmuser:rmpasswrod@localhost/', 'my_queue')
+    consumer = AsyncRabbitMQConsumer(
+        f'amqp://{config.RABBIT_USER}:{config.RABBIT_PASSWORD}@{config.RABBIT_HOST}/', config.INPUT_QUEUE
+    )
     await consumer.consume()
 
 async def main():

@@ -13,3 +13,21 @@
     "http": "http://localhost:8000/callback"
   }
 }
+
+# sms sender
+
+{
+    "sender_type": "SMS",
+    "message_id": "msg-123",
+    "statuses":
+    [
+        {
+            "login": "user1",
+            "status": true
+        },
+        {
+            "login": "user2",
+            "status": false
+        }
+    ]
+}
