@@ -1,5 +1,6 @@
 import tortoise.exceptions
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status, Request
+from jose import JWTError
 from pydantic import BaseModel
 from datetime import timedelta
 from services.auth_service import AuthService
@@ -48,3 +49,17 @@ async def login(user: UserLogin):
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/validate_token")
+async def validate_token(request: Request):
+    authorization: str = request.headers.get("Authorization")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing token")
+
+    token = authorization.split(" ")[1]
+
+    try:
+        await auth_service.validate_token(token)
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

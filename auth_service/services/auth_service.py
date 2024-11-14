@@ -35,3 +35,6 @@ class AuthService:
         if user and user.password == self.hash_password(password):
             return user
         return None
+
+    async def validate_token(self, token: str):
+        jwt.decode(token, config.JWT_SECRET, algorithms=[config.ALGORITHM])

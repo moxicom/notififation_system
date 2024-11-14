@@ -64,6 +64,7 @@ services:
     restart: always
     environment:
       # - GATEWAY_PORT=${GATEWAY_PORT}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
       - RABBIT_HOST=${RABBIT_HOST}
       - RABBIT_USER=${RABBIT_USER}
       - RABBIT_PASSWORD=${RABBIT_PASSWORD}
