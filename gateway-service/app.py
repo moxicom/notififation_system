@@ -1,49 +1,47 @@
 import asyncio
 import logging
+from asyncio import get_running_loop
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
 from adapters.httpserver import create_rest_handler
+from adapters.rabbithandler.rabbit import rabbit_producer
 
-from adapters.rabbithandler import init_rabbit_producer, rabbit_producer
+# from adapters.rabbithandler import init_rabbit_producer, rabbit_producer
 from core.config import config
 
 
 # Функция для запуска HTTP сервера
-def run_http_server(port: int):
+def run_http_server_sync(port: int):
     handler = create_rest_handler(port)
     handler.run()
 
-
-# Функция для запуска слушателя RabbitMQ в отдельном потоке
-def run_rabbit_listener():
-    # init_rabbit_producer(
-    #
-    # )
-    rabbit_producer.start_listening()
-
+async def run_http_server(port):
+    loop = get_running_loop()
+    with ThreadPoolExecutor() as executor:
+        await loop.run_in_executor(executor, run_http_server_sync, port)
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-
-    with ThreadPoolExecutor() as executor:
-        loop = asyncio.get_event_loop()
-
-        # Передаем порт в run_http_server через partial
-        run_http_server_partial = partial(run_http_server, 8000)
-
-
-        try:
-            run_rabbit_partial = partial(run_rabbit_listener)
-            # Запуск HTTP сервера и RabbitMQ listener параллельно
-            await asyncio.gather(
-                loop.run_in_executor(executor, run_rabbit_partial),
-                loop.run_in_executor(executor, run_http_server_partial)
-            )
-        except Exception as ex:
-            logging.error(f"failed to init rabbit {ex}")
-            raise exit(1)
-
+    try:
+        await asyncio.gather(
+            rabbit_producer.consume(),
+            run_http_server(8000)
+        )
+    except Exception as e:
+        logging.exception("Application failed to start.")
+        raise SystemExit(1)
+    finally:
+        logging.info("Shutting down application.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Use asyncio.run() if not in a running event loop
+    try:
+        asyncio.run(main())
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called" in str(e):
+            # For environments with a running event loop
+            logging.warning("Running inside an already started event loop.")
+            asyncio.create_task(main())
+        else:
+            raise

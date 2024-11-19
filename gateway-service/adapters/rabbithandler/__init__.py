@@ -1,1 +1,1 @@
-from adapters.rabbithandler.rabbit import RabbitMQProducer, rabbit_producer, init_rabbit_producer
+from adapters.rabbithandler.rabbit import AsyncRabbitMQConsumer

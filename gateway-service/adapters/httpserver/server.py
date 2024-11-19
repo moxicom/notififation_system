@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI, APIRouter
 
 from adapters.httpserver.router import router
-from adapters.rabbithandler import RabbitMQProducer
+# from adapters.rabbithandler import RabbitMQProducer
 
 fastapi_logger = logging.getLogger(__name__)
 

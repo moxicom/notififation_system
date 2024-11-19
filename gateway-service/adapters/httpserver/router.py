@@ -2,12 +2,12 @@ import logging
 
 import httpx
 
+from adapters.rabbithandler.rabbit import rabbit_producer
 from core.config import config
 from models import NotificationInfo
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from adapters.rabbithandler import rabbit_producer
 
 router = APIRouter()
 
@@ -45,7 +45,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(beare
 async def notify_handler(notification: NotificationInfo):
     try:
         message = notification.model_dump(by_alias=True)
-        rabbit_producer.send_message(message)
+        await rabbit_producer.publish_notification(message)
         return SuccessResponse(message="Successfully sent")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send notification: {e}")
